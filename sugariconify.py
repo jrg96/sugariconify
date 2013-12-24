@@ -51,6 +51,8 @@ class SugarIconify():
         self.transparent_color = '#00000000'
         self.stroke_color = self.default_stroke_color
         self.fill_color = self.default_fill_color
+        self._target_stroke = None
+        self._target_fill = None
         self.stroke_entity = 'stroke_color'
         self.fill_entity = 'fill_color'
         self.iso_stroke_entity = 'iso_stroke_color'
@@ -77,7 +79,9 @@ class SugarIconify():
     def _parse_command_line(self):
         ''' Try to make sense of the command-line arguments. '''
         try:
-            opts, arg = getopt.getopt(sys.argv[1:], 's:f:gcd:imp:oehvx')
+            opts, arg = getopt.getopt(sys.argv[1:], 's:f:gcd:imp:oehvx',
+                                      ['stroke=', 'fill=', 'guess', 'help',
+                                       'overwrite', 'verbose'])
         except:
             self.usage()
             sys.exit(2)
@@ -88,41 +92,33 @@ class SugarIconify():
 
         # Interpret arguments
         for o, a in opts:
-            if o == '-s':
-                if 'rgb' in a:
-                    self.stroke_color = a.lower()
-                else:
-                    self.stroke_color = '#' + a.lstrip('#').lower()
-                self.entities_passed += 1
-            elif o == '-f':
-                if 'rgb' in a:
-                    self.fill_color = a.lower()
-                else:
-                    self.fill_color = '#' + a.lstrip('#').lower()
-                    self.entities_passed += 1
-            elif o == '-g':
-                self.confirm_guess = False
+            if o in ['-s', '--stroke']:
+                self.set_stroke_color(a)
+            elif o in ['-f', '--fill']:
+                self.set_fill_color(a)
+            elif o in ['-g', '--guess']:
+                self.set_confirm_guess(False)
             elif o == '-c':
-                self.use_default_colors = True
-            elif o == '-o':
-                self.overwrite_input = True
+                self.set_use_default_colors(True)
+            elif o in ['-o', '--overwrite']:
+                self.set_overwrite_input(True)
             elif o == '-d':
-                self.output_path = a.rstrip('/') + '/'
+                self.set_output_path(a)
             elif o == '-e':
-                self.use_entities = False
-            elif o == '-v':
-                self.verbose = True
+                self.set_use_entities(False)
+            elif o in ['-v', 'verbose']:
+                self.set_verbose(True)
             elif o == '-p':
-                self.pattern = a
-            elif o == '-h':
+                self.set_pattern(a)
+            elif o in ['-h', '--help']:
                 usage()
                 sys.exit(2)
             elif o == '-m':
-                self.multiple = True
+                self.set_multiple(True)
             elif o == '-x':
-                self.output_examples = True
+                self.set_output_examples(True)
             elif o == '-i':
-                self.use_iso_strokes = True
+                self.set_use_iso_strokes(True)
 
         self.iconify(arg[0])
 
@@ -131,7 +127,7 @@ class SugarIconify():
         percent_list = s.split(',')
         hex_str = '#'
         for value in percent_list:
-            hex_str += percent_to_hex(value)
+            hex_str += self.percent_to_hex(value)
         return hex_str
 
     def percent_to_hex(self, num):
@@ -145,16 +141,18 @@ class SugarIconify():
     
     def set_stroke_color(self, s=None):
         if s is not None:
-            if len(s) > 3 and s[0:3].lower() == 'rgb':
+            if 'rgb' in s.lower():
                 self.stroke_color = self.rgb_to_hex(s)
+                self._target_stroke = s
             else:
                 self.stroke_color = '#' + s.lstrip('#').lower()
             self.entities_passed += 1
 
     def set_fill_color(self, f=None):
         if f is not None:
-            if len(f) > 3 and f[0:3].lower() == 'rgb':
+            if 'rgb' in f.lower():
                 self.fill_color = self.rgb_to_hex(f)
+                self._target_fill = f
             else:
                 self.fill_color = '#' + f.lstrip('#').lower()
             self.entities_passed += 1
@@ -233,6 +231,7 @@ class SugarIconify():
                                           self.svgtext)
             self.fill_match = re.search(r'fill_color\s*\"([^"]*)\"',
                                         self.svgtext)
+
             if self.stroke_match is not None:
                 self.stroke_color = self.stroke_match.group(1).lower()
                 self.entities_passed += 1
@@ -262,7 +261,7 @@ class SugarIconify():
             # declaration block; this obviously would remove any other
             # custom self.entities declared within the SVG, but we
             # assume that's an extreme edge case
-            
+
             self.svgtext, self.n = \
                 re.subn(r'(<!DOCTYPE[^>\[]*)(\[[^\]]*\])*\>',
                         r'\1 \n[\n' + self.entities + ']>\n', self.svgtext)
@@ -314,6 +313,8 @@ Should be (55px, 55px)' % (self.w, self.h)
             
         # Guess the entity values, if they aren't passed in
         if self.use_entities:
+            print 'entities_passed ==', self.entities_passed
+
             if self.entities_passed < 2:
                 self.stroke_color, self.fill_color = \
                     self.guessEntities(self.svg)
@@ -681,6 +682,7 @@ Should be (55px, 55px)' % (self.w, self.h)
                 if 'rgb' not in s:
                     return s.lower()
                 else:
+                    print 'converting', s, 'to hex'
                     percent_list = s2.split(',')
                     hex_str = '#'
                     for value in percent_list:
@@ -711,6 +713,7 @@ Should be (55px, 55px)' % (self.w, self.h)
                 if 'rgb' not in f:
                     return f.lower()
                 else:
+                    print 'converting', f, 'to hex'
                     percent_list = f2.split(',')
                     hex_str = '#'
                     for value in percent_list:
@@ -823,10 +826,16 @@ Should be (55px, 55px)' % (self.w, self.h)
 
     def guessEntities(self, node):
         guesses = self.getColorPairs(node)
-        # Print guesses
 
-        stroke_guess = 'none'
-        fill_guess = 'none'
+        if self.stroke_color is not None:
+            stroke_guess = self.stroke_color
+        else:
+            stroke_guess = 'none'
+
+        if self.stroke_color is not None:
+            fill_guess = self.fill_color
+        else:
+            fill_guess = 'none'
 
         for guess in guesses:
             if stroke_guess == 'none':
