@@ -61,7 +61,6 @@ class SugarIconify():
         self.pattern = ''
         self.entities_passed = 0
         self.use_default_colors = False
-        self.confirm_guess = True
         self.use_entities = True
         self.multiple = False
         self.verbose = False
@@ -70,7 +69,10 @@ class SugarIconify():
         self.use_iso_strokes = False
 
         if command_line:
+            self.confirm_guess = True
             self._parse_command_line()
+        else:
+            self.confirm_guess = False
 
     def usage(self):
         # Define help output
@@ -324,12 +326,13 @@ Should be (55px, 55px)' % (self.w, self.h)
                 print '     self.stroke_entity = ' + self.stroke_color
                 print '     self.fill_entity = ' + self.fill_color
 
-            '''if self.entities_passed < 2:
-                if self.confirm_guess:
-                    response = raw_input('\nAre these self.entities correct? [y/n] ')
+                if self.entities_passed < 2 and self.confirm_guess:
+                    response = raw_input(
+                        '\nAre these self.entities correct? [y/n] ')
                     if response.lower() != 'y':
-                        print 'Please run this script again, passing the proper colors with the -s and -f flags.'
-                        sys.exit(1)'''
+                        print 'Please run this script again, passing the \
+proper colors with the -s and -f flags.'
+                        sys.exit(1)
 
         # Define the HTML for preview output
         self.previewHTML = "\
@@ -827,9 +830,6 @@ Should be (55px, 55px)' % (self.w, self.h)
     def guessEntities(self, node):
         guesses = self.getColorPairs(node)
 
-        print guesses
-        print self.stroke_color, self.fill_color
-
         if self.stroke_color is not None and \
            self.stroke_color != self.default_stroke_color:
             stroke_guess = self.stroke_color
@@ -841,8 +841,6 @@ Should be (55px, 55px)' % (self.w, self.h)
             fill_guess = self.fill_color
         else:
             fill_guess = 'none'
-
-        print stroke_guess, fill_guess
 
         for guess in guesses:
             if stroke_guess == 'none':
