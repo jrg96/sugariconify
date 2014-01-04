@@ -309,7 +309,7 @@ self.entities + "]>\n<svg", self.svgtext)
         self.w = self.svg.getAttribute('width')
         self.h = self.svg.getAttribute('height')
 
-        if self.w != '55px' or self.h != '55px':
+        if self.w not in ['55px', '55'] or self.h not in ['55px', '55']:
             print 'Warning: invalid canvas size (%s, %s); \
 Should be (55px, 55px)' % (self.w, self.h)
             
