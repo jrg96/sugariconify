@@ -324,12 +324,12 @@ Should be (55px, 55px)' % (self.w, self.h)
                 print '     self.stroke_entity = ' + self.stroke_color
                 print '     self.fill_entity = ' + self.fill_color
 
-            '''if self.entities_passed < 2:
+            if self.entities_passed < 2 and sys.argv[0]:
                 if self.confirm_guess:
                     response = raw_input('\nAre these self.entities correct? [y/n] ')
                     if response.lower() != 'y':
                         print 'Please run this script again, passing the proper colors with the -s and -f flags.'
-                        sys.exit(1)'''
+                        sys.exit(1)
 
         # Define the HTML for preview output
         self.previewHTML = "\
