@@ -827,15 +827,22 @@ Should be (55px, 55px)' % (self.w, self.h)
     def guessEntities(self, node):
         guesses = self.getColorPairs(node)
 
-        if self.stroke_color is not None:
+        print guesses
+        print self.stroke_color, self.fill_color
+
+        if self.stroke_color is not None and \
+           self.stroke_color != self.default_stroke_color:
             stroke_guess = self.stroke_color
         else:
             stroke_guess = 'none'
 
-        if self.stroke_color is not None:
+        if self.stroke_color is not None and \
+           self.fill_color != self.default_fill_color:
             fill_guess = self.fill_color
         else:
             fill_guess = 'none'
+
+        print stroke_guess, fill_guess
 
         for guess in guesses:
             if stroke_guess == 'none':
